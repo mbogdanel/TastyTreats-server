@@ -1,6 +1,7 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
+const fetch = require('node-fetch')
 const app = express()
 require('dotenv').config()
 
@@ -17,11 +18,36 @@ mongoose.connect(
   }
 )
 
+async function validateHuman(token) {
+  const secret = '6LdqNoAbAAAAAEfM2yA56r2o7APhoOx63rmyJTnE'
+  const response = await fetch(
+    `https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`,
+    {
+      method: 'POST',
+    }
+  )
+  const data = await response.json()
+  return data.success
+}
+
 app.post('/insert', async (req, res) => {
   const name = req.body.name
   const emailAddress = req.body.emailAddress
   const message = req.body.message
   const subscribed = req.body.subscribed
+  const token = req.body.token
+
+  console.log(token)
+
+  const human = await validateHuman(token)
+
+  console.log(human)
+
+  if (!human) {
+    res.status(400)
+    res.json({ errors: ['Go away, bot.'] })
+    return
+  }
 
   const inquiry = new InquiriesModel({
     name: name,
